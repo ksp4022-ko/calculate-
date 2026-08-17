@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>專業電子算盤</title>
+  <style>
+    * { box-sizing: border-box; user-select: none; -webkit-user-select: none; touch-action: none; font-family: -apple-system, sans-serif; }
+    body { margin: 0; padding: 0; background-color: #f4f1ea; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; transition: background 0.3s; }
+    
+    .top-board { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px); border-radius: 16px; padding: 12px 20px; width: 90%; max-width: 450px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.08); margin-bottom: 15px; z-index: 10; }
+    .value-display { font-size: 2.5rem; font-weight: 800; color: #4a3525; font-variant-numeric: tabular-nums; letter-spacing: 2px; }
+    .quiz-display { font-size: 0.95rem; color: #1976d2; font-weight: 600; margin-top: 3px; display: none; }
+    .timer-display { font-size: 1.1rem; color: #d32f2f; font-weight: bold; margin-top: 3px; }
+
+    /* 算盤主體與精準對齊 */
+    .abacus-frame { background: #5c3a21; border: 10px solid #3d2312; border-radius: 8px; padding: 8px; display: flex; justify-content: space-around; width: 95%; max-width: 500px; height: 340px; position: relative; box-shadow: inset 0 0 15px rgba(0,0,0,0.5), 0 10px 30px rgba(0,0,0,0.3); transition: all 0.3s; }
+    .rod { display: flex; flex-direction: column; align-items: center; position: relative; flex: 1; height: 100%; }
+    .rod::before { content: ''; position: absolute; top: 0; bottom: 0; width: 4px; background: linear-gradient(to right, #999, #fff, #777); z-index: 1; box-shadow: 2px 0 5px rgba(0,0,0,0.2); }
+    
+    /* 橫梁精準置中 */
+    .beam { position: absolute; top: 32%; left: -8px; right: -8px; height: 16px; background: #3d2312; z-index: 3; box-shadow: 0 3px 5px rgba(0,0,0,0.4); }
+    .dot { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 6px; height: 6px; background: white; border-radius: 50%; z-index: 4; }
+    
+    .upper-deck { height: 32%; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; z-index: 2; position: relative; }
+    .lower-deck { height: 60%; width: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; z-index: 2; position: relative; }
+    
+    .bead { width: 90%; max-width: 42px; height: 24px; background: linear-gradient(180deg, #f5a623 0%, #c87600 50%, #8b4500 100%); clip-path: polygon(15% 0, 85% 0, 100% 50%, 85% 100%, 15% 100%, 0 50%); margin: 1px 0; transition: transform 0.1s ease-out; cursor: grab; z-index: 5; box-shadow: inset 0 2px 5px rgba(255,255,255,0.4); }
+    .bead:active { cursor: grabbing; filter: brightness(1.1); }
+
+    #fab { position: absolute; bottom: 30px; right: 20px; width: 52px; height: 52px; background: #4a3525; color: white; border-radius: 26px; display: flex; align-items: center; justify-content: center; font-size: 26px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 100; transition: left 0.3s ease-out, right 0.3s ease-out; }
+    
+    /* 設定選單修復：確保內容可捲動且底部按鈕不被遮擋 */
+    #settings-panel { position: absolute; top: 0; left: -100%; width: 85%; max-width: 350px; height: 100%; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(15px); box-shadow: 4px 0 20px rgba(0,0,0,0.2); z-index: 200; transition: left 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); padding: 30px 20px 80px 20px; overflow-y: auto; }
+    #settings-panel.open { left: 0; }
+    .close-btn { position: absolute; top: 15px; right: 20px; font-size: 24px; color: #666; cursor: pointer; padding: 5px; }
+    .setting-group { margin-bottom: 20px; }
+    .setting-group label { display: block; font-weight: bold; color: #4a3525; margin-bottom: 6px; font-size: 1rem; }
+    .slider { width: 100%; height: 6px; background: #ddd; outline: none; border-radius: 4px; -webkit-appearance: none; }
+    .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; background: #4a3525; border-radius: 50%; }
+    .setting-select { width: 100%; padding: 8px; font-size: 0.95rem; border-radius: 8px; border: 1px solid #ccc; }
+    .btn { width: 100%; padding: 12px; margin-top: 10px; font-size: 1.05rem; font-weight: bold; border: none; border-radius: 8px; color: white; background: #4a3525; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .btn-quiz { background: #1976d2; }
+    .btn-auth { background: #d32f2f; margin-top: 20px; margin-bottom: 40px; animation: pulse 2s infinite; }
+
+    @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+    
+    #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 150; display: none; opacity: 0; transition: opacity 0.3s; }
+  </style>
+</head>
+<body>
+
+  <div class="top-board">
+    <div class="value-display" id="total-val">0.0</div>
+    <div class="quiz-display" id="quiz-box">目標: <span id="target-val">0.0</span></div>
+    <div class="timer-display" id="timer-box" style="display:none;">00:00</div>
+  </div>
+
+  <div class="abacus-frame" id="abacus">
+    <div class="beam" id="abacus-beam"></div>
+  </div>
+
+  <div id="fab">⚙️</div>
+  <div id="overlay"></div>
+
+  <div id="settings-panel">
+    <div class="close-btn" id="close-menu">✖</div>
+    <h2 style="color:#4a3525; margin-top:0;">設定與工具</h2>
+    
+    <div class="setting-group">
+      <label>拖曳靈敏度: <span id="sens-val">20px</span></label>
+      <input type="range" id="sens-slider" class="slider" min="5" max="60" value="20">
+    </div>
+
+    <div class="setting-group">
+      <label>重力回正自動歸零</label>
+      <select id="auto-zero-select" class="setting-select">
+        <option value="off">關閉 (平放保持掉落狀態)</option>
+        <option value="on">開啟 (平放自動歸零)</option>
+      </select>
+    </div>
+
+    <div class="setting-group">
+      <label>算盤材質</label>
+      <select id="theme-select" class="setting-select">
+        <option value="obsidian">現代黑曜 (預設)</option>
+        <option value="redwood">經典紅木</option>
+        <option value="lightwood">極簡原木</option>
+      </select>
+    </div>
+
+    <div class="setting-group">
+      <label>算珠樣式</label>
+      <select id="bead-select" class="setting-select">
+        <option value="rhombus">擬真菱形 (預設)</option>
+        <option value="round">圓潤算珠</option>
+      </select>
+    </div>
+
+    <div class="setting-group">
+      <label>音效開關</label>
+      <select id="sound-select" class="setting-select">
+        <option value="on">開啟 (木頭撞擊聲)</option>
+        <option value="off">關閉</option>
+      </select>
+    </div>
+
+    <button class="btn btn-quiz" onclick="startQuiz()">📝 隨機出題練習</button>
+    <button class="btn" onclick="toggleTimer()" style="background:#e67e22;">⏱️ 計時器開/關</button>
+    
+    <!-- 確保按鈕一定看得到 -->
+    <button class="btn btn-auth" onclick="requestPermissions()">🔓 點擊解鎖重力感應 & 音效</button>
+  </div>
+
+  <script>
+    const ROD_COUNT = 6; 
+    let rodsData = Array(ROD_COUNT).fill().map(() => ({ upper: false, lower: 0 }));
+    let SWIPE_SENSITIVITY = 20; 
+    let soundEnabled = true;
+    let autoZeroOnFlat = false; 
+    let audioCtx = null;
+    let targetValue = null;
+    let timerInterval = null;
+    let seconds = 0;
+    
+    function initAbacus() {
+      const container = document.getElementById('abacus');
+      const beam = document.getElementById('abacus-beam');
+      
+      container.querySelectorAll('.rod').forEach(e => e.remove());
+      
+      for (let i = 0; i < ROD_COUNT; i++) {
+        const rodEl = document.createElement('div');
+        rodEl.className = 'rod';
+        
+        const upperDeck = document.createElement('div');
+        upperDeck.className = 'upper-deck';
+        const upperBead = document.createElement('div');
+        upperBead.className = 'bead upper-bead';
+        setupTouch(upperBead, i, true, 0);
+        upperDeck.appendChild(upperBead);
+        
+        const lowerDeck = document.createElement('div');
+        lowerDeck.className = 'lower-deck';
+        for (let b = 0; b < 4; b++) {
+          const lowerBead = document.createElement('div');
+          lowerBead.className = 'bead lower-bead';
+          setupTouch(lowerBead, i, false, b);
+          lowerDeck.appendChild(lowerBead);
+        }
+        
+        rodEl.appendChild(upperDeck);
+        rodEl.appendChild(lowerDeck);
+        container.appendChild(rodEl);
+      }
+      
+      const dot = document.createElement('div');
+      dot.className = 'dot';
+      setTimeout(() => {
+        const rods = document.querySelectorAll('.rod');
+        const pos = rods[4].offsetLeft + (rods[4].offsetWidth / 2);
+        dot.style.left = pos + 'px';
+        beam.appendChild(dot);
+      }, 100);
+
+      render();
+    }
+
+    function setupTouch(element, rodIndex, isUpper, beadIndex) {
+      let startY = 0;
+      let isMoved = false;
+
+      element.addEventListener('touchstart', (e) => {
+        startY = e.touches[0].clientY;
+        isMoved = false;
+      });
+
+      element.addEventListener('touchmove', (e) => {
+        if (isMoved) return;
+        const deltaY = e.touches[0].clientY - startY;
+
+        if (Math.abs(deltaY) > SWIPE_SENSITIVITY) {
+          isMoved = true;
+          if (isUpper) {
+            if (deltaY > 0 && !rodsData[rodIndex].upper) {
+              rodsData[rodIndex].upper = true; playSound();
+            } else if (deltaY < 0 && rodsData[rodIndex].upper) {
+              rodsData[rodIndex].upper = false; playSound();
+            }
+          } else {
+            const currentLower = rodsData[rodIndex].lower;
+            const beadValue = 4 - beadIndex;
+            
+            if (deltaY < 0 && beadValue > currentLower) {
+              rodsData[rodIndex].lower = beadValue; playSound(beadValue - currentLower);
+            } else if (deltaY > 0 && beadValue <= currentLower) {
+              rodsData[rodIndex].lower = beadValue - 1; playSound(currentLower - (beadValue - 1));
+            }
+          }
+          render();
+        }
+      });
+    }
+
+    function render() {
+      const rodEls = document.querySelectorAll('.rod');
+      let total = 0;
+      
+      rodsData.forEach((data, i) => {
+        const rodEl = rodEls[i];
+        const upperBead = rodEl.querySelector('.upper-bead');
+        const lowerBeads = rodEl.querySelectorAll('.lower-bead');
+        
+        upperBead.style.transform = data.upper ? 'translateY(22px)' : 'translateY(0)';
+        
+        lowerBeads.forEach((bead, idx) => {
+          const beadValue = 4 - idx;
+          bead.style.transform = beadValue <= data.lower ? `translateY(-${(beadValue)*25}px)` : 'translateY(0)';
+        });
+        
+        const rodVal = (data.upper ? 5 : 0) + data.lower;
+        const multiplier = Math.pow(10, 4 - i); 
+        total += rodVal * multiplier;
+      });
+      
+      document.getElementById('total-val').innerText = total.toFixed(1).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+      
+      if (targetValue !== null && Math.abs(total - targetValue) < 0.05) {
+        setTimeout(() => { alert('🎉 答對了！'); targetValue = null; document.getElementById('quiz-box').style.display = 'none'; }, 100);
+      }
+    }
+
+    let gravityState = 'flat'; 
+    let isAnimating = false;
+
+    window.addEventListener('deviceorientation', (e) => {
+      if (isAnimating) return;
+      const beta = e.beta; 
+
+      if (beta > 70 && gravityState !== 'down') {
+        gravityState = 'down';
+        applyGravityDrop(true); 
+      } else if (beta < -70 && gravityState !== 'up') {
+        gravityState = 'up';
+        applyGravityDrop(false);
+      } else if (Math.abs(beta) < 30 && gravityState !== 'flat') {
+        gravityState = 'flat';
+        if (autoZeroOnFlat) {
+          zeroAbacusStaggered();
+        }
+      }
+    });
+
+    function applyGravityDrop(isDown) {
+      isAnimating = true;
+      let delay = 0;
+      rodsData.forEach((rod, i) => {
+        setTimeout(() => {
+          rod.upper = isDown; 
+          rod.lower = isDown ? 0 : 4; 
+          render();
+          playSound(2);
+        }, delay);
+        delay += (Math.random() * 40 + 20); 
+      });
+      setTimeout(() => { isAnimating = false; }, delay + 100);
+    }
+
+    function zeroAbacusStaggered() {
+      isAnimating = true;
+      let delay = 0;
+      rodsData.forEach((rod, i) => {
+        setTimeout(() => {
+          rod.upper = false;
+          rod.lower = 0;
+          render();
+          playSound(1);
+        }, delay);
+        delay += (Math.random() * 40 + 20);
+      });
+      setTimeout(() => { isAnimating = false; }, delay + 100);
+    }
+
+    function playSound(intensity = 1) {
+      if (!soundEnabled || !audioCtx) return;
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(800 + Math.random()*200, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.05);
+      
+      gain.gain.setValueAtTime(0.6 * Math.min(intensity, 3), audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+      
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.05);
+    }
+
+    const fab = document.getElementById('fab');
+    let fabActive = false;
+    let initialX, initialY, currentX, currentY, xOffset = 0, yOffset = 0;
+
+    fab.addEventListener('touchstart', e => {
+      initialX = e.touches[0].clientX - xOffset;
+      initialY = e.touches[0].clientY - yOffset;
+      fabActive = true;
+    });
+
+    fab.addEventListener('touchmove', e => {
+      if (!fabActive) return;
+      e.preventDefault();
+      currentX = e.touches[0].clientX - initialX;
+      currentY = e.touches[0].clientY - initialY;
+      xOffset = currentX; yOffset = currentY;
+      fab.style.transform = `translate3d(${currentX}px, ${currentY}px, 0)`;
+    });
+
+    fab.addEventListener('touchend', e => {
+      fabActive = false;
+      const rect = fab.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const screenW = window.innerWidth;
+      
+      const snapX = (centerX > screenW / 2) ? (screenW - rect.width - 20) : 20;
+      const moveX = snapX - rect.left;
+      xOffset += moveX;
+      fab.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)';
+      fab.style.transform = `translate3d(${xOffset}px, ${yOffset}px, 0)`;
+      setTimeout(() => { fab.style.transition = 'none'; }, 300);
+    });
+
+    const menu = document.getElementById('settings-panel');
+    const overlay = document.getElementById('overlay');
+    
+    let fabTouchStart;
+    fab.addEventListener('touchstart', () => { fabTouchStart = Date.now(); });
+    fab.addEventListener('touchend', () => {
+      if (Date.now() - fabTouchStart < 200) {
+        menu.classList.add('open');
+        overlay.style.display = 'block';
+        setTimeout(()=> overlay.style.opacity = 1, 10);
+      }
+    });
+
+    function closeMenu() {
+      menu.classList.remove('open');
+      overlay.style.opacity = 0;
+      setTimeout(()=> overlay.style.display = 'none', 300);
+    }
+    document.getElementById('close-menu').onclick = closeMenu;
+    overlay.onclick = closeMenu;
+
+    document.getElementById('sens-slider').oninput = function() {
+      SWIPE_SENSITIVITY = this.value;
+      document.getElementById('sens-val').innerText = this.value + 'px';
+    };
+
+    document.getElementById('auto-zero-select').onchange = function() {
+      autoZeroOnFlat = (this.value === 'on');
+    };
+
+    document.getElementById('sound-select').onchange = function() {
+      soundEnabled = (this.value === 'on');
+    };
+
+    document.getElementById('bead-select').onchange = function() {
+      const beads = document.querySelectorAll('.bead');
+      if (this.value === 'round') {
+        beads.forEach(b => { b.style.clipPath = 'none'; b.style.borderRadius = '12px'; });
+      } else {
+        beads.forEach(b => { b.style.clipPath = 'polygon(15% 0, 85% 0, 100% 50%, 85% 100%, 15% 100%, 0 50%)'; b.style.borderRadius = '0'; });
+      }
+    };
+
+    document.getElementById('theme-select').onchange = function() {
+      const frame = document.getElementById('abacus');
+      const beam = document.getElementById('abacus-beam');
+      if (this.value === 'obsidian') {
+        frame.style.background = '#2c3e50'; frame.style.borderColor = '#1a252f'; beam.style.background = '#1a252f';
+      } else if (this.value === 'lightwood') {
+        frame.style.background = '#e3c598'; frame.style.borderColor = '#c09b69'; beam.style.background = '#9c7b50';
+      } else {
+        frame.style.background = '#5c3a21'; frame.style.borderColor = '#3d2312'; beam.style.background = '#3d2312';
+      }
+    };
+
+    function requestPermissions() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      playSound(1);
+
+      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        DeviceOrientationEvent.requestPermission().then(response => {
+          if (response == 'granted') {
+            alert('✅ 重力感應與音效已成功解鎖！');
+          } else {
+            alert('❌ 權限被拒絕，無法使用重力感應。');
+          }
+        }).catch(console.error);
+      } else {
+        alert('✅ 音效與重力感應已就緒！');
+      }
+      closeMenu();
+    }
+
+    function startQuiz() {
+      zeroAbacusStaggered();
+      targetValue = (Math.random() * 9999 + 1).toFixed(1);
+      document.getElementById('target-val').innerText = targetValue.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+      document.getElementById('quiz-box').style.display = 'block';
+      closeMenu();
+    }
+
+    function toggleTimer() {
+      const tb = document.getElementById('timer-box');
+      if (timerInterval) {
+        clearInterval(timerInterval); timerInterval = null; tb.style.color = '#d32f2f';
+      } else {
+        if (seconds === 0) tb.style.display = 'block';
+        tb.style.color = '#2e7d32';
+        timerInterval = setInterval(() => {
+          seconds++;
+          const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+          const s = String(seconds % 60).padStart(2, '0');
+          tb.innerText = `${m}:${s}`;
+        }, 1000);
+      }
+      closeMenu();
+    }
+
+    initAbacus();
+  </script>
+</body>
+</html>
