@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <!-- 關鍵：強制 iOS 啟用全螢幕 App 模式 -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>電子算盤</title>
+  <style>
+    * { box-sizing: border-box; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+    body { margin: 0; padding: 15px; background-color: #f4f1ea; font-family: -apple-system, sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+    h1 { margin: 10px 0 5px; color: #4a3525; font-size: 1.5rem; }
+    .display-panel { background: #fff; border: 2px solid #8b5a2b; border-radius: 12px; padding: 12px 20px; width: 100%; max-width: 400px; text-align: center; margin-bottom: 15px; }
+    .value-display { font-size: 2.2rem; font-weight: bold; color: #8b5a2b; }
+    .abacus-frame { background: #5c3a21; border: 8px solid #3d2312; border-radius: 10px; padding: 10px 5px; display: flex; justify-content: space-around; width: 100%; max-width: 400px; position: relative; }
+    .rod { display: flex; flex-direction: column; align-items: center; position: relative; flex: 1; }
+    .rod::before { content: ''; position: absolute; top: 0; bottom: 0; width: 4px; background: linear-gradient(to right, #ccc, #fff, #999); z-index: 1; }
+    .beam { width: 100%; height: 12px; background: #3d2312; margin: 5px 0; z-index: 3; }
+    .upper-deck, .lower-deck { display: flex; flex-direction: column; align-items: center; width: 100%; z-index: 2; }
+    .upper-deck { height: 75px; }
+    .lower-deck { height: 180px; justify-content: flex-end; }
+    .bead { width: 38px; height: 22px; background: linear-gradient(180deg, #e69c24 0%, #b86b0a 50%, #7a4302 100%); border-radius: 11px; margin: 1px 0; transition: transform 0.15s ease-out; }
+    .btn-group { display: flex; gap: 10px; width: 100%; max-width: 400px; margin-top: 20px; }
+    .btn { flex: 1; padding: 12px; font-size: 1rem; font-weight: bold; border: none; border-radius: 8px; color: white; }
+    .btn-reset { background: #d32f2f; }
+    .btn-quiz { background: #1976d2; }
+  </style>
+</head>
+<body>
+  <h1>🧮 電子算盤</h1>
+  <div class="display-panel">
+    <div style="font-size: 0.85rem; color: #666;">當前數值</div>
+    <div class="value-display" id="total-val">0</div>
+    <div id="quiz-box" style="display:none; margin-top:5px; color:#2e7d32; font-weight:600;">題目：請撥出 <span id="target-val">0</span></div>
+  </div>
+  <div class="abacus-frame" id="abacus"></div>
+  <div class="btn-group">
+    <button class="btn btn-reset" onclick="resetAbacus()">歸零</button>
+    <button class="btn btn-quiz" onclick="generateQuiz()">隨機出題</button>
+  </div>
+  <script>
+    const ROD_COUNT = 7;
+    const rodsData = Array(ROD_COUNT).fill().map(() => ({ upper: false, lowerCount: 0 }));
+    let targetValue = null;
+    function initAbacus() {
+      const container = document.getElementById('abacus');
+      container.innerHTML = '';
+      for (let i = 0; i < ROD_COUNT; i++) {
+        const rodEl = document.createElement('div');
+        rodEl.className = 'rod';
+        const upperDeck = document.createElement('div');
+        upperDeck.className = 'upper-deck';
+        const upperBead = document.createElement('div');
+        upperBead.className = 'bead upper-bead';
+        upperBead.onclick = () => toggleUpper(i);
+        upperDeck.appendChild(upperBead);
+        const beam = document.createElement('div');
+        beam.className = 'beam';
+        const lowerDeck = document.createElement('div');
+        lowerDeck.className = 'lower-deck';
+        for (let b = 0; b < 4; b++) {
+          const lowerBead = document.createElement('div');
+          lowerBead.className = 'bead lower-bead';
+          lowerBead.onclick = () => setLower(i, b + 1);
+          lowerDeck.appendChild(lowerBead);
+        }
+        rodEl.appendChild(upperDeck);
+        rodEl.appendChild(beam);
+        rodEl.appendChild(lowerDeck);
+        container.appendChild(rodEl);
+      }
+      render();
+    }
+    function toggleUpper(rodIndex) { rodsData[rodIndex].upper = !rodsData[rodIndex].upper; render(); }
+    function setLower(rodIndex, count) { rodsData[rodIndex].lowerCount = (rodsData[rodIndex].lowerCount === count) ? count - 1 : count; render(); }
+    function render() {
+      const rodEls = document.querySelectorAll('.rod');
+      let total = 0;
+      rodsData.forEach((data, i) => {
+        const rodEl = rodEls[i];
+        const upperBead = rodEl.querySelector('.upper-bead');
+        const lowerBeads = rodEl.querySelectorAll('.lower-bead');
+        upperBead.style.transform = data.upper ? 'translateY(48px)' : 'translateY(0)';
+        lowerBeads.forEach((bead, idx) => {
+          bead.style.transform = idx < data.lowerCount ? `translateY(-${(4 - idx) * 24}px)` : 'translateY(0)';
+        });
+        const rodValue = (data.upper ? 5 : 0) + data.lowerCount;
+        total += rodValue * Math.pow(10, ROD_COUNT - 1 - i);
+      });
+      document.getElementById('total-val').innerText = total.toLocaleString();
+      if (targetValue !== null && total === targetValue) {
+        setTimeout(() => { alert('🎉 答對了！'); targetValue = null; document.getElementById('quiz-box').style.display = 'none'; }, 100);
+      }
+    }
+    function resetAbacus() { rodsData.forEach(r => { r.upper = false; r.lowerCount = 0; }); render(); }
+    function generateQuiz() { resetAbacus(); targetValue = Math.floor(Math.random() * 99999) + 1; document.getElementById('target-val').innerText = targetValue.toLocaleString(); document.getElementById('quiz-box').style.display = 'block'; }
+    initAbacus();
+  </script>
+</body>
+</html>
