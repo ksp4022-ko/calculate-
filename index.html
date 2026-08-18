@@ -8,45 +8,45 @@
   <title>專業電子算盤</title>
   <style>
     * { box-sizing: border-box; user-select: none; -webkit-user-select: none; touch-action: none; font-family: -apple-system, sans-serif; }
-    body { margin: 0; padding: 0; background-color: #f4f1ea; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; transition: background 0.3s; }
+    body { margin: 0; padding: 0; background-color: #f4f1ea; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
     
-    .top-board { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px); border-radius: 16px; padding: 12px 20px; width: 90%; max-width: 450px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.08); margin-bottom: 15px; z-index: 10; }
-    .value-display { font-size: 2.5rem; font-weight: 800; color: #4a3525; font-variant-numeric: tabular-nums; letter-spacing: 2px; }
-    .quiz-display { font-size: 0.95rem; color: #1976d2; font-weight: 600; margin-top: 3px; display: none; }
-    .timer-display { font-size: 1.1rem; color: #d32f2f; font-weight: bold; margin-top: 3px; }
+    .top-board { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px); border-radius: 16px; padding: 10px 20px; width: 90%; max-width: 450px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.08); margin-bottom: 12px; z-index: 10; }
+    .value-display { font-size: 2.3rem; font-weight: 800; color: #4a3525; font-variant-numeric: tabular-nums; letter-spacing: 2px; }
+    .quiz-display { font-size: 0.95rem; color: #1976d2; font-weight: 600; margin-top: 2px; display: none; }
+    .timer-display { font-size: 1.05rem; color: #d32f2f; font-weight: bold; margin-top: 2px; }
 
-    /* 算盤主體與精準對齊 */
-    .abacus-frame { background: #5c3a21; border: 10px solid #3d2312; border-radius: 8px; padding: 8px; display: flex; justify-content: space-around; width: 95%; max-width: 500px; height: 340px; position: relative; box-shadow: inset 0 0 15px rgba(0,0,0,0.5), 0 10px 30px rgba(0,0,0,0.3); transition: all 0.3s; }
-    .rod { display: flex; flex-direction: column; align-items: center; position: relative; flex: 1; height: 100%; }
-    .rod::before { content: ''; position: absolute; top: 0; bottom: 0; width: 4px; background: linear-gradient(to right, #999, #fff, #777); z-index: 1; box-shadow: 2px 0 5px rgba(0,0,0,0.2); }
+    /* 算盤主體：嚴格 7 格等距網格架構 */
+    .abacus-frame { background: #5c3a21; border: 8px solid #3d2312; border-radius: 10px; padding: 4px; display: flex; justify-content: space-around; width: 95%; max-width: 480px; height: 350px; position: relative; box-shadow: inset 0 0 15px rgba(0,0,0,0.6), 0 10px 25px rgba(0,0,0,0.3); }
+    .rod { display: flex; flex-direction: column; position: relative; flex: 1; height: 100%; }
+    .rod::before { content: ''; position: absolute; top: 0; bottom: 0; left: 50%; transform: translateX(-50%); width: 4px; background: linear-gradient(to right, #888, #fff, #666); z-index: 1; }
     
-    /* 橫梁精準置中 */
-    .beam { position: absolute; top: 32%; left: -8px; right: -8px; height: 16px; background: #3d2312; z-index: 3; box-shadow: 0 3px 5px rgba(0,0,0,0.4); }
-    .dot { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 6px; height: 6px; background: white; border-radius: 50%; z-index: 4; }
+    /* 橫梁精準定位在第 2 格與第 3 格之間 */
+    .beam { position: absolute; top: calc(2 / 7 * 100%); left: -4px; right: -4px; height: calc(1 / 7 * 100%); background: #3d2312; z-index: 3; box-shadow: 0 3px 6px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; }
+    .dot { width: 6px; height: 6px; background: #fff; border-radius: 50%; z-index: 4; }
     
-    .upper-deck { height: 32%; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; z-index: 2; position: relative; }
-    .lower-deck { height: 60%; width: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; z-index: 2; position: relative; }
+    /* 上下盤 7 格區域劃分 */
+    .upper-deck { position: absolute; top: 0; left: 0; width: 100%; height: calc(2 / 7 * 100%); z-index: 2; }
+    .lower-deck { position: absolute; top: calc(3 / 7 * 100%); left: 0; width: 100%; height: calc(4 / 7 * 100%); z-index: 2; }
     
-    .bead { width: 90%; max-width: 42px; height: 24px; background: linear-gradient(180deg, #f5a623 0%, #c87600 50%, #8b4500 100%); clip-path: polygon(15% 0, 85% 0, 100% 50%, 85% 100%, 15% 100%, 0 50%); margin: 1px 0; transition: transform 0.1s ease-out; cursor: grab; z-index: 5; box-shadow: inset 0 2px 5px rgba(255,255,255,0.4); }
-    .bead:active { cursor: grabbing; filter: brightness(1.1); }
+    /* 算珠尺寸與平滑動畫（使用 transform 確保絲滑） */
+    .bead { position: absolute; left: 50%; transform: translateX(-50%); width: 88%; max-width: 40px; height: calc(1 / 7 * 100% - 4px); background: linear-gradient(180deg, #f5a623 0%, #c87600 50%, #8b4500 100%); clip-path: polygon(15% 0, 85% 0, 100% 50%, 85% 100%, 15% 100%, 0 50%); transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1); cursor: grab; z-index: 5; box-shadow: inset 0 2px 4px rgba(255,255,255,0.4); }
+    .bead:active { cursor: grabbing; filter: brightness(1.15); }
 
-    #fab { position: absolute; bottom: 30px; right: 20px; width: 52px; height: 52px; background: #4a3525; color: white; border-radius: 26px; display: flex; align-items: center; justify-content: center; font-size: 26px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 100; transition: left 0.3s ease-out, right 0.3s ease-out; }
+    #fab { position: absolute; bottom: 30px; right: 20px; width: 50px; height: 50px; background: #4a3525; color: white; border-radius: 25px; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 100; }
     
-    /* 設定選單修復：確保內容可捲動且底部按鈕不被遮擋 */
-    #settings-panel { position: absolute; top: 0; left: -100%; width: 85%; max-width: 350px; height: 100%; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(15px); box-shadow: 4px 0 20px rgba(0,0,0,0.2); z-index: 200; transition: left 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); padding: 30px 20px 80px 20px; overflow-y: auto; }
+    #settings-panel { position: absolute; top: 0; left: -100%; width: 85%; max-width: 350px; height: 100%; background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(15px); box-shadow: 4px 0 20px rgba(0,0,0,0.25); z-index: 200; transition: left 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); padding: 25px 20px 90px 20px; overflow-y: auto; }
     #settings-panel.open { left: 0; }
     .close-btn { position: absolute; top: 15px; right: 20px; font-size: 24px; color: #666; cursor: pointer; padding: 5px; }
-    .setting-group { margin-bottom: 20px; }
-    .setting-group label { display: block; font-weight: bold; color: #4a3525; margin-bottom: 6px; font-size: 1rem; }
+    .setting-group { margin-bottom: 18px; }
+    .setting-group label { display: block; font-weight: bold; color: #4a3525; margin-bottom: 6px; font-size: 0.95rem; }
     .slider { width: 100%; height: 6px; background: #ddd; outline: none; border-radius: 4px; -webkit-appearance: none; }
-    .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; background: #4a3525; border-radius: 50%; }
+    .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; background: #4a3525; border-radius: 50%; }
     .setting-select { width: 100%; padding: 8px; font-size: 0.95rem; border-radius: 8px; border: 1px solid #ccc; }
-    .btn { width: 100%; padding: 12px; margin-top: 10px; font-size: 1.05rem; font-weight: bold; border: none; border-radius: 8px; color: white; background: #4a3525; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .btn { width: 100%; padding: 12px; margin-top: 10px; font-size: 1rem; font-weight: bold; border: none; border-radius: 8px; color: white; background: #4a3525; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
     .btn-quiz { background: #1976d2; }
-    .btn-auth { background: #d32f2f; margin-top: 20px; margin-bottom: 40px; animation: pulse 2s infinite; }
+    .btn-auth { background: #d32f2f; margin-top: 15px; animation: pulse 2s infinite; }
 
     @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
-    
     #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 150; display: none; opacity: 0; transition: opacity 0.3s; }
   </style>
 </head>
@@ -59,7 +59,7 @@
   </div>
 
   <div class="abacus-frame" id="abacus">
-    <div class="beam" id="abacus-beam"></div>
+    <div class="beam" id="abacus-beam"><div class="dot"></div></div>
   </div>
 
   <div id="fab">⚙️</div>
@@ -70,14 +70,14 @@
     <h2 style="color:#4a3525; margin-top:0;">設定與工具</h2>
     
     <div class="setting-group">
-      <label>拖曳靈敏度: <span id="sens-val">20px</span></label>
-      <input type="range" id="sens-slider" class="slider" min="5" max="60" value="20">
+      <label>觸控靈敏度: <span id="sens-val">15px</span></label>
+      <input type="range" id="sens-slider" class="slider" min="5" max="40" value="15">
     </div>
 
     <div class="setting-group">
       <label>重力回正自動歸零</label>
       <select id="auto-zero-select" class="setting-select">
-        <option value="off">關閉 (平放保持掉落狀態)</option>
+        <option value="off">關閉 (平放保持狀態)</option>
         <option value="on">開啟 (平放自動歸零)</option>
       </select>
     </div>
@@ -87,7 +87,7 @@
       <select id="theme-select" class="setting-select">
         <option value="obsidian">現代黑曜 (預設)</option>
         <option value="redwood">經典紅木</option>
-        <option value="lightwood">極簡原木</option>
+        <option value="lightwood">极簡原木</option>
       </select>
     </div>
 
@@ -109,15 +109,13 @@
 
     <button class="btn btn-quiz" onclick="startQuiz()">📝 隨機出題練習</button>
     <button class="btn" onclick="toggleTimer()" style="background:#e67e22;">⏱️ 計時器開/關</button>
-    
-    <!-- 確保按鈕一定看得到 -->
     <button class="btn btn-auth" onclick="requestPermissions()">🔓 點擊解鎖重力感應 & 音效</button>
   </div>
 
   <script>
     const ROD_COUNT = 6; 
     let rodsData = Array(ROD_COUNT).fill().map(() => ({ upper: false, lower: 0 }));
-    let SWIPE_SENSITIVITY = 20; 
+    let SWIPE_SENSITIVITY = 15; 
     let soundEnabled = true;
     let autoZeroOnFlat = false; 
     let audioCtx = null;
@@ -127,77 +125,81 @@
     
     function initAbacus() {
       const container = document.getElementById('abacus');
-      const beam = document.getElementById('abacus-beam');
-      
       container.querySelectorAll('.rod').forEach(e => e.remove());
       
       for (let i = 0; i < ROD_COUNT; i++) {
         const rodEl = document.createElement('div');
         rodEl.className = 'rod';
         
+        // 上盤（1顆上珠）
         const upperDeck = document.createElement('div');
         upperDeck.className = 'upper-deck';
         const upperBead = document.createElement('div');
         upperBead.className = 'bead upper-bead';
-        setupTouch(upperBead, i, true, 0);
         upperDeck.appendChild(upperBead);
         
+        // 下盤（4顆下珠）
         const lowerDeck = document.createElement('div');
         lowerDeck.className = 'lower-deck';
         for (let b = 0; b < 4; b++) {
           const lowerBead = document.createElement('div');
           lowerBead.className = 'bead lower-bead';
-          setupTouch(lowerBead, i, false, b);
+          lowerBead.dataset.index = b;
           lowerDeck.appendChild(lowerBead);
         }
         
         rodEl.appendChild(upperDeck);
         rodEl.appendChild(lowerDeck);
+        
+        // 綁定觸控互動
+        setupRodInteraction(rodEl, i);
+
         container.appendChild(rodEl);
       }
-      
-      const dot = document.createElement('div');
-      dot.className = 'dot';
-      setTimeout(() => {
-        const rods = document.querySelectorAll('.rod');
-        const pos = rods[4].offsetLeft + (rods[4].offsetWidth / 2);
-        dot.style.left = pos + 'px';
-        beam.appendChild(dot);
-      }, 100);
-
       render();
     }
 
-    function setupTouch(element, rodIndex, isUpper, beadIndex) {
+    function setupRodInteraction(rodEl, rodIndex) {
       let startY = 0;
       let isMoved = false;
 
-      element.addEventListener('touchstart', (e) => {
+      rodEl.addEventListener('touchstart', (e) => {
         startY = e.touches[0].clientY;
         isMoved = false;
       });
 
-      element.addEventListener('touchmove', (e) => {
+      rodEl.addEventListener('touchmove', (e) => {
         if (isMoved) return;
-        const deltaY = e.touches[0].clientY - startY;
+        const currentY = e.touches[0].clientY;
+        const deltaY = currentY - startY;
 
         if (Math.abs(deltaY) > SWIPE_SENSITIVITY) {
           isMoved = true;
-          if (isUpper) {
-            if (deltaY > 0 && !rodsData[rodIndex].upper) {
-              rodsData[rodIndex].upper = true; playSound();
-            } else if (deltaY < 0 && rodsData[rodIndex].upper) {
-              rodsData[rodIndex].upper = false; playSound();
+          const rect = rodEl.getBoundingClientRect();
+          const touchRelY = startY - rect.top;
+          const deckHeight = rect.height;
+          
+          // 判斷觸碰的是上盤還是下盤
+          if (touchRelY < deckHeight * 0.3) {
+            // 上盤操作：往下撥加5，往上撥減5
+            if (deltaY > 0) {
+              rodsData[rodIndex].upper = true;
+            } else {
+              rodsData[rodIndex].upper = false;
             }
+            playSound();
           } else {
-            const currentLower = rodsData[rodIndex].lower;
-            const beadValue = 4 - beadIndex;
-            
-            if (deltaY < 0 && beadValue > currentLower) {
-              rodsData[rodIndex].lower = beadValue; playSound(beadValue - currentLower);
-            } else if (deltaY > 0 && beadValue <= currentLower) {
-              rodsData[rodIndex].lower = beadValue - 1; playSound(currentLower - (beadValue - 1));
+            // 下盤操作：向上推增加數值（帶動連動），向下拉減少數值
+            let current = rodsData[rodIndex].lower;
+            if (deltaY < 0) {
+              // 向上推：數值增加（例如從1推到4）
+              current = Math.min(4, current + 1);
+            } else {
+              // 向下拉：數值減少
+              current = Math.max(0, current - 1);
             }
+            rodsData[rodIndex].lower = current;
+            playSound();
           }
           render();
         }
@@ -210,14 +212,23 @@
       
       rodsData.forEach((data, i) => {
         const rodEl = rodEls[i];
+        if (!rodEl) return;
         const upperBead = rodEl.querySelector('.upper-bead');
         const lowerBeads = rodEl.querySelectorAll('.lower-bead');
         
-        upperBead.style.transform = data.upper ? 'translateY(22px)' : 'translateY(0)';
+        // 上珠位置：未啟動在頂端 (0%)，啟動則向下移動 1 個單位格子
+        upperBead.style.transform = data.upper ? 'translateX(-50%) translateY(100% + 4px)' : 'translateX(-50%) translateY(0)';
         
+        // 下珠連動位置：根據數值 (0~4) 計算往上靠攏的格子數
         lowerBeads.forEach((bead, idx) => {
-          const beadValue = 4 - idx;
-          bead.style.transform = beadValue <= data.lower ? `translateY(-${(beadValue)*25}px)` : 'translateY(0)';
+          const beadVal = 4 - idx; // 從上到下第幾個珠子
+          if (beadVal <= data.lower) {
+            // 靠攏橫梁（向上擠壓）
+            bead.style.transform = `translateX(-50%) translateY(-${data.lower * 100}% - ${data.lower * 4}px)`;
+          } else {
+            // 沉在底部
+            bead.style.transform = 'translateX(-50%) translateY(0)';
+          }
         });
         
         const rodVal = (data.upper ? 5 : 0) + data.lower;
@@ -238,14 +249,15 @@
     window.addEventListener('deviceorientation', (e) => {
       if (isAnimating) return;
       const beta = e.beta; 
+      if (beta === null) return;
 
-      if (beta > 70 && gravityState !== 'down') {
+      if (beta > 65 && gravityState !== 'down') {
         gravityState = 'down';
         applyGravityDrop(true); 
-      } else if (beta < -70 && gravityState !== 'up') {
+      } else if (beta < -65 && gravityState !== 'up') {
         gravityState = 'up';
         applyGravityDrop(false);
-      } else if (Math.abs(beta) < 30 && gravityState !== 'flat') {
+      } else if (Math.abs(beta) < 25 && gravityState !== 'flat') {
         gravityState = 'flat';
         if (autoZeroOnFlat) {
           zeroAbacusStaggered();
@@ -256,34 +268,34 @@
     function applyGravityDrop(isDown) {
       isAnimating = true;
       let delay = 0;
-      rodsData.forEach((rod, i) => {
+      rodsData.forEach((rod) => {
         setTimeout(() => {
           rod.upper = isDown; 
           rod.lower = isDown ? 0 : 4; 
           render();
-          playSound(2);
+          playSound();
         }, delay);
-        delay += (Math.random() * 40 + 20); 
+        delay += 25; 
       });
-      setTimeout(() => { isAnimating = false; }, delay + 100);
+      setTimeout(() => { isAnimating = false; }, delay + 50);
     }
 
     function zeroAbacusStaggered() {
       isAnimating = true;
       let delay = 0;
-      rodsData.forEach((rod, i) => {
+      rodsData.forEach((rod) => {
         setTimeout(() => {
           rod.upper = false;
           rod.lower = 0;
           render();
-          playSound(1);
+          playSound();
         }, delay);
-        delay += (Math.random() * 40 + 20);
+        delay += 25;
       });
-      setTimeout(() => { isAnimating = false; }, delay + 100);
+      setTimeout(() => { isAnimating = false; }, delay + 50);
     }
 
-    function playSound(intensity = 1) {
+    function playSound() {
       if (!soundEnabled || !audioCtx) return;
       if (audioCtx.state === 'suspended') audioCtx.resume();
       
@@ -291,58 +303,26 @@
       const gain = audioCtx.createGain();
       
       osc.type = 'triangle';
-      osc.frequency.setValueAtTime(800 + Math.random()*200, audioCtx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.05);
+      osc.frequency.setValueAtTime(700 + Math.random()*150, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.04);
       
-      gain.gain.setValueAtTime(0.6 * Math.min(intensity, 3), audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+      gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.04);
       
       osc.connect(gain);
       gain.connect(audioCtx.destination);
       osc.start();
-      osc.stop(audioCtx.currentTime + 0.05);
+      osc.stop(audioCtx.currentTime + 0.04);
     }
 
     const fab = document.getElementById('fab');
-    let fabActive = false;
-    let initialX, initialY, currentX, currentY, xOffset = 0, yOffset = 0;
-
-    fab.addEventListener('touchstart', e => {
-      initialX = e.touches[0].clientX - xOffset;
-      initialY = e.touches[0].clientY - yOffset;
-      fabActive = true;
-    });
-
-    fab.addEventListener('touchmove', e => {
-      if (!fabActive) return;
-      e.preventDefault();
-      currentX = e.touches[0].clientX - initialX;
-      currentY = e.touches[0].clientY - initialY;
-      xOffset = currentX; yOffset = currentY;
-      fab.style.transform = `translate3d(${currentX}px, ${currentY}px, 0)`;
-    });
-
-    fab.addEventListener('touchend', e => {
-      fabActive = false;
-      const rect = fab.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const screenW = window.innerWidth;
-      
-      const snapX = (centerX > screenW / 2) ? (screenW - rect.width - 20) : 20;
-      const moveX = snapX - rect.left;
-      xOffset += moveX;
-      fab.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)';
-      fab.style.transform = `translate3d(${xOffset}px, ${yOffset}px, 0)`;
-      setTimeout(() => { fab.style.transition = 'none'; }, 300);
-    });
-
     const menu = document.getElementById('settings-panel');
     const overlay = document.getElementById('overlay');
     
     let fabTouchStart;
     fab.addEventListener('touchstart', () => { fabTouchStart = Date.now(); });
     fab.addEventListener('touchend', () => {
-      if (Date.now() - fabTouchStart < 200) {
+      if (Date.now() - fabTouchStart < 250) {
         menu.classList.add('open');
         overlay.style.display = 'block';
         setTimeout(()=> overlay.style.opacity = 1, 10);
@@ -373,7 +353,7 @@
     document.getElementById('bead-select').onchange = function() {
       const beads = document.querySelectorAll('.bead');
       if (this.value === 'round') {
-        beads.forEach(b => { b.style.clipPath = 'none'; b.style.borderRadius = '12px'; });
+        beads.forEach(b => { b.style.clipPath = 'none'; b.style.borderRadius = '10px'; });
       } else {
         beads.forEach(b => { b.style.clipPath = 'polygon(15% 0, 85% 0, 100% 50%, 85% 100%, 15% 100%, 0 50%)'; b.style.borderRadius = '0'; });
       }
@@ -394,18 +374,18 @@
     function requestPermissions() {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === 'suspended') audioCtx.resume();
-      playSound(1);
+      playSound();
 
       if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
         DeviceOrientationEvent.requestPermission().then(response => {
           if (response == 'granted') {
-            alert('✅ 重力感應與音效已成功解鎖！');
+            alert('✅ 重力感應與權限已成功解鎖！');
           } else {
-            alert('❌ 權限被拒絕，無法使用重力感應。');
+            alert('❌ 權限被拒絕。');
           }
         }).catch(console.error);
       } else {
-        alert('✅ 音效與重力感應已就緒！');
+        alert('✅ 音效與感應已就緒！');
       }
       closeMenu();
     }
