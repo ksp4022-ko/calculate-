@@ -5,31 +5,32 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>專業電子算盤</title>
+  <title>專業電子算盤 v1.0.1</title>
   <style>
     * { box-sizing: border-box; user-select: none; -webkit-user-select: none; touch-action: none; font-family: -apple-system, sans-serif; }
     body { margin: 0; padding: 0; background-color: #f4f1ea; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
     
-    .top-board { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px); border-radius: 16px; padding: 10px 20px; width: 90%; max-width: 450px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.08); margin-bottom: 12px; z-index: 10; }
-    .value-display { font-size: 2.3rem; font-weight: 800; color: #4a3525; font-variant-numeric: tabular-nums; letter-spacing: 2px; }
-    .quiz-display { font-size: 0.95rem; color: #1976d2; font-weight: 600; margin-top: 2px; display: none; }
-    .timer-display { font-size: 1.05rem; color: #d32f2f; font-weight: bold; margin-top: 2px; }
+    .top-board { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px); border-radius: 16px; padding: 8px 20px; width: 90%; max-width: 450px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.08); margin-bottom: 10px; z-index: 10; position: relative; }
+    .value-display { font-size: 2.2rem; font-weight: 800; color: #4a3525; font-variant-numeric: tabular-nums; letter-spacing: 2px; }
+    .version-tag { position: absolute; top: 6px; right: 12px; font-size: 0.75rem; color: #888; font-weight: bold; }
+    .quiz-display { font-size: 0.9rem; color: #1976d2; font-weight: 600; margin-top: 2px; display: none; }
+    .timer-display { font-size: 1rem; color: #d32f2f; font-weight: bold; margin-top: 2px; }
 
-    /* 算盤主體：嚴格 7 格等距網格架構 */
-    .abacus-frame { background: #5c3a21; border: 8px solid #3d2312; border-radius: 10px; padding: 4px; display: flex; justify-content: space-around; width: 95%; max-width: 480px; height: 350px; position: relative; box-shadow: inset 0 0 15px rgba(0,0,0,0.6), 0 10px 25px rgba(0,0,0,0.3); }
+    /* 算盤主體外框 */
+    .abacus-frame { background: #5c3a21; border: 8px solid #3d2312; border-radius: 10px; padding: 4px; display: flex; justify-content: space-around; width: 95%; max-width: 480px; height: 385px; position: relative; box-shadow: inset 0 0 15px rgba(0,0,0,0.6), 0 10px 25px rgba(0,0,0,0.3); }
     .rod { display: flex; flex-direction: column; position: relative; flex: 1; height: 100%; }
     .rod::before { content: ''; position: absolute; top: 0; bottom: 0; left: 50%; transform: translateX(-50%); width: 4px; background: linear-gradient(to right, #888, #fff, #666); z-index: 1; }
     
-    /* 橫梁精準定位在第 2 格與第 3 格之間 */
+    /* 橫梁 */
     .beam { position: absolute; top: calc(2 / 7 * 100%); left: -4px; right: -4px; height: calc(1 / 7 * 100%); background: #3d2312; z-index: 3; box-shadow: 0 3px 6px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; }
     .dot { width: 6px; height: 6px; background: #fff; border-radius: 50%; z-index: 4; }
     
-    /* 上下盤 7 格區域劃分 */
+    /* 上盤與下盤區域 */
     .upper-deck { position: absolute; top: 0; left: 0; width: 100%; height: calc(2 / 7 * 100%); z-index: 2; }
-    .lower-deck { position: absolute; top: calc(3 / 7 * 100%); left: 0; width: 100%; height: calc(4 / 7 * 100%); z-index: 2; }
+    .lower-deck { position: absolute; top: calc(3 / 7 * 100%); left: 0; width: 100%; height: calc(5 / 7 * 100%); z-index: 2; }
     
-    /* 算珠尺寸與平滑動畫（使用 transform 確保絲滑） */
-    .bead { position: absolute; left: 50%; transform: translateX(-50%); width: 88%; max-width: 40px; height: calc(1 / 7 * 100% - 4px); background: linear-gradient(180deg, #f5a623 0%, #c87600 50%, #8b4500 100%); clip-path: polygon(15% 0, 85% 0, 100% 50%, 85% 100%, 15% 100%, 0 50%); transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1); cursor: grab; z-index: 5; box-shadow: inset 0 2px 4px rgba(255,255,255,0.4); }
+    /* 算珠：改用更具真實質感的穩定圓角矩形貼圖樣式，避免變形錯位 */
+    .bead { position: absolute; left: 50%; transform: translateX(-50%); width: 84%; max-width: 38px; height: calc(1 / 7 * 100% - 6px); background: linear-gradient(180deg, #f5a623 0%, #d88500 50%, #964b00 100%); border-radius: 6px; transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1); cursor: grab; z-index: 5; box-shadow: 0 2px 4px rgba(0,0,0,0.3), inset 0 1px 2px rgba(255,255,255,0.5); }
     .bead:active { cursor: grabbing; filter: brightness(1.15); }
 
     #fab { position: absolute; bottom: 30px; right: 20px; width: 50px; height: 50px; background: #4a3525; color: white; border-radius: 25px; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 100; }
@@ -53,6 +54,7 @@
 <body>
 
   <div class="top-board">
+    <div class="version-tag">v1.0.1</div>
     <div class="value-display" id="total-val">0.0</div>
     <div class="quiz-display" id="quiz-box">目標: <span id="target-val">0.0</span></div>
     <div class="timer-display" id="timer-box" style="display:none;">00:00</div>
@@ -67,7 +69,7 @@
 
   <div id="settings-panel">
     <div class="close-btn" id="close-menu">✖</div>
-    <h2 style="color:#4a3525; margin-top:0;">設定與工具</h2>
+    <h2 style="color:#4a3525; margin-top:0;">設定與工具 <span style="font-size:0.8rem; color:#888;">(v1.0.1)</span></h2>
     
     <div class="setting-group">
       <label>觸控靈敏度: <span id="sens-val">15px</span></label>
@@ -87,15 +89,7 @@
       <select id="theme-select" class="setting-select">
         <option value="obsidian">現代黑曜 (預設)</option>
         <option value="redwood">經典紅木</option>
-        <option value="lightwood">极簡原木</option>
-      </select>
-    </div>
-
-    <div class="setting-group">
-      <label>算珠樣式</label>
-      <select id="bead-select" class="setting-select">
-        <option value="rhombus">擬真菱形 (預設)</option>
-        <option value="round">圓潤算珠</option>
+        <option value="lightwood">極簡原木</option>
       </select>
     </div>
 
@@ -131,29 +125,24 @@
         const rodEl = document.createElement('div');
         rodEl.className = 'rod';
         
-        // 上盤（1顆上珠）
         const upperDeck = document.createElement('div');
         upperDeck.className = 'upper-deck';
         const upperBead = document.createElement('div');
         upperBead.className = 'bead upper-bead';
         upperDeck.appendChild(upperBead);
         
-        // 下盤（4顆下珠）
         const lowerDeck = document.createElement('div');
         lowerDeck.className = 'lower-deck';
         for (let b = 0; b < 4; b++) {
           const lowerBead = document.createElement('div');
           lowerBead.className = 'bead lower-bead';
-          lowerBead.dataset.index = b;
           lowerDeck.appendChild(lowerBead);
         }
         
         rodEl.appendChild(upperDeck);
         rodEl.appendChild(lowerDeck);
         
-        // 綁定觸控互動
         setupRodInteraction(rodEl, i);
-
         container.appendChild(rodEl);
       }
       render();
@@ -179,23 +168,14 @@
           const touchRelY = startY - rect.top;
           const deckHeight = rect.height;
           
-          // 判斷觸碰的是上盤還是下盤
           if (touchRelY < deckHeight * 0.3) {
-            // 上盤操作：往下撥加5，往上撥減5
-            if (deltaY > 0) {
-              rodsData[rodIndex].upper = true;
-            } else {
-              rodsData[rodIndex].upper = false;
-            }
+            rodsData[rodIndex].upper = (deltaY > 0);
             playSound();
           } else {
-            // 下盤操作：向上推增加數值（帶動連動），向下拉減少數值
             let current = rodsData[rodIndex].lower;
             if (deltaY < 0) {
-              // 向上推：數值增加（例如從1推到4）
               current = Math.min(4, current + 1);
             } else {
-              // 向下拉：數值減少
               current = Math.max(0, current - 1);
             }
             rodsData[rodIndex].lower = current;
@@ -216,17 +196,14 @@
         const upperBead = rodEl.querySelector('.upper-bead');
         const lowerBeads = rodEl.querySelectorAll('.lower-bead');
         
-        // 上珠位置：未啟動在頂端 (0%)，啟動則向下移動 1 個單位格子
-        upperBead.style.transform = data.upper ? 'translateX(-50%) translateY(100% + 4px)' : 'translateX(-50%) translateY(0)';
+        // 嚴格對齊 7 格比例偏移
+        upperBead.style.transform = data.upper ? 'translateX(-50%) translateY(100%)' : 'translateX(-50%) translateY(0)';
         
-        // 下珠連動位置：根據數值 (0~4) 計算往上靠攏的格子數
         lowerBeads.forEach((bead, idx) => {
-          const beadVal = 4 - idx; // 從上到下第幾個珠子
+          const beadVal = 4 - idx; 
           if (beadVal <= data.lower) {
-            // 靠攏橫梁（向上擠壓）
-            bead.style.transform = `translateX(-50%) translateY(-${data.lower * 100}% - ${data.lower * 4}px)`;
+            bead.style.transform = `translateX(-50%) translateY(-${data.lower * 100}%)`;
           } else {
-            // 沉在底部
             bead.style.transform = 'translateX(-50%) translateY(0)';
           }
         });
@@ -348,15 +325,6 @@
 
     document.getElementById('sound-select').onchange = function() {
       soundEnabled = (this.value === 'on');
-    };
-
-    document.getElementById('bead-select').onchange = function() {
-      const beads = document.querySelectorAll('.bead');
-      if (this.value === 'round') {
-        beads.forEach(b => { b.style.clipPath = 'none'; b.style.borderRadius = '10px'; });
-      } else {
-        beads.forEach(b => { b.style.clipPath = 'polygon(15% 0, 85% 0, 100% 50%, 85% 100%, 15% 100%, 0 50%)'; b.style.borderRadius = '0'; });
-      }
     };
 
     document.getElementById('theme-select').onchange = function() {
