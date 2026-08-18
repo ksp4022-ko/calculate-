@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>專業電子算盤 v1.0.2</title>
+  <title>專業電子算盤 v1.0.3</title>
   <style>
     * { box-sizing: border-box; user-select: none; -webkit-user-select: none; touch-action: none; font-family: -apple-system, sans-serif; }
     body { margin: 0; padding: 0; background-color: #f4f1ea; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
@@ -16,22 +16,19 @@
     .quiz-display { font-size: 0.9rem; color: #1976d2; font-weight: 600; margin-top: 2px; display: none; }
     .timer-display { font-size: 1rem; color: #d32f2f; font-weight: bold; margin-top: 2px; }
 
-    /* 算盤主體外框：精確劃分高度 */
-    .abacus-frame { background: #5c3a21; border: 8px solid #3d2312; border-radius: 10px; padding: 6px; display: flex; justify-content: space-around; width: 95%; max-width: 480px; height: 385px; position: relative; box-shadow: inset 0 0 15px rgba(0,0,0,0.6), 0 10px 25px rgba(0,0,0,0.3); }
-    .rod { display: flex; flex-direction: column; position: relative; flex: 1; height: 100%; }
+    /* 算盤主體外框固定尺寸，確保內部絕對座標精準 */
+    .abacus-frame { background: #5c3a21; border: 8px solid #3d2312; border-radius: 10px; width: 95%; max-width: 480px; height: 385px; position: relative; box-shadow: inset 0 0 15px rgba(0,0,0,0.6), 0 10px 25px rgba(0,0,0,0.3); overflow: hidden; }
+    
+    .rod-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: space-around; padding: 0 10px; }
+    .rod { position: relative; width: 32px; height: 100%; }
     .rod::before { content: ''; position: absolute; top: 0; bottom: 0; left: 50%; transform: translateX(-50%); width: 4px; background: linear-gradient(to right, #888, #fff, #666); z-index: 1; }
     
-    /* 橫梁：固定在 2/7 至 3/7 之間 */
-    .beam { position: absolute; top: calc(2 / 7 * 100%); left: -6px; right: -6px; height: calc(1 / 7 * 100%); background: #3d2312; z-index: 3; box-shadow: 0 3px 6px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; }
+    /* 橫梁固定在中間精準位置 */
+    .beam { position: absolute; top: 110px; left: 0; right: 0; height: 35px; background: #3d2312; z-index: 3; box-shadow: 0 3px 6px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; }
     .dot { width: 6px; height: 6px; background: #fff; border-radius: 50%; z-index: 4; }
     
-    /* 上盤（2格高）與下盤（5格高） */
-    .upper-deck { position: absolute; top: 0; left: 0; width: 100%; height: calc(2 / 7 * 100%); z-index: 2; }
-    .lower-deck { position: absolute; top: calc(3 / 7 * 100%); left: 0; width: 100%; height: calc(5 / 7 * 100%); z-index: 2; }
-    
-    /* 算珠：高度嚴格設定為 1/7 桿高，確保不會互相擠壓變形 */
-    .bead { position: absolute; left: 50%; transform: translateX(-50%); width: 84%; max-width: 38px; height: calc(100% / 5 - 2px); background: linear-gradient(180deg, #f5a623 0%, #d88500 50%, #964b00 100%); border-radius: 6px; transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1); cursor: grab; z-index: 5; box-shadow: 0 2px 4px rgba(0,0,0,0.3), inset 0 1px 2px rgba(255,255,255,0.5); }
-    .upper-bead { height: calc(50% - 2px); }
+    /* 算珠：改用絕對 top 定位，徹底根除堆疊變形問題 */
+    .bead { position: absolute; left: 50%; transform: translateX(-50%); width: 36px; height: 28px; background: linear-gradient(180deg, #f5a623 0%, #d88500 50%, #964b00 100%); border-radius: 5px; transition: top 0.15s cubic-bezier(0.2, 0.8, 0.2, 1); cursor: grab; z-index: 5; box-shadow: 0 2px 4px rgba(0,0,0,0.3), inset 0 1px 2px rgba(255,255,255,0.5); }
     .bead:active { cursor: grabbing; filter: brightness(1.15); }
 
     #fab { position: absolute; bottom: 30px; right: 20px; width: 50px; height: 50px; background: #4a3525; color: white; border-radius: 25px; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 100; }
@@ -55,7 +52,7 @@
 <body>
 
   <div class="top-board">
-    <div class="version-tag">v1.0.2</div>
+    <div class="version-tag">v1.0.3</div>
     <div class="value-display" id="total-val">0.0</div>
     <div class="quiz-display" id="quiz-box">目標: <span id="target-val">0.0</span></div>
     <div class="timer-display" id="timer-box" style="display:none;">00:00</div>
@@ -63,6 +60,7 @@
 
   <div class="abacus-frame" id="abacus">
     <div class="beam" id="abacus-beam"><div class="dot"></div></div>
+    <div class="rod-container" id="rod-container"></div>
   </div>
 
   <div id="fab">⚙️</div>
@@ -70,7 +68,7 @@
 
   <div id="settings-panel">
     <div class="close-btn" id="close-menu">✖</div>
-    <h2 style="color:#4a3525; margin-top:0;">設定與工具 <span style="font-size:0.8rem; color:#888;">(v1.0.2)</span></h2>
+    <h2 style="color:#4a3525; margin-top:0;">設定與工具 <span style="font-size:0.8rem; color:#888;">(v1.0.3)</span></h2>
     
     <div class="setting-group">
       <label>觸控靈敏度: <span id="sens-val">15px</span></label>
@@ -119,30 +117,25 @@
     let seconds = 0;
     
     function initAbacus() {
-      const container = document.getElementById('abacus');
-      container.querySelectorAll('.rod').forEach(e => e.remove());
+      const container = document.getElementById('rod-container');
+      container.innerHTML = '';
       
       for (let i = 0; i < ROD_COUNT; i++) {
         const rodEl = document.createElement('div');
         rodEl.className = 'rod';
         
-        const upperDeck = document.createElement('div');
-        upperDeck.className = 'upper-deck';
+        // 上珠 (1顆)
         const upperBead = document.createElement('div');
         upperBead.className = 'bead upper-bead';
-        upperDeck.appendChild(upperBead);
+        rodEl.appendChild(upperBead);
         
-        const lowerDeck = document.createElement('div');
-        lowerDeck.className = 'lower-deck';
+        // 下珠 (4顆)
         for (let b = 0; b < 4; b++) {
           const lowerBead = document.createElement('div');
           lowerBead.className = 'bead lower-bead';
-          lowerBead.style.top = `${b * 20}%`; // 5格中的每一格固定位置
-          lowerDeck.appendChild(lowerBead);
+          lowerBead.dataset.index = b;
+          rodEl.appendChild(lowerBead);
         }
-        
-        rodEl.appendChild(upperDeck);
-        rodEl.appendChild(lowerDeck);
         
         setupRodInteraction(rodEl, i);
         container.appendChild(rodEl);
@@ -168,9 +161,8 @@
           isMoved = true;
           const rect = rodEl.getBoundingClientRect();
           const touchRelY = startY - rect.top;
-          const deckHeight = rect.height;
           
-          if (touchRelY < deckHeight * 0.3) {
+          if (touchRelY < 110) {
             rodsData[rodIndex].upper = (deltaY > 0);
             playSound();
           } else {
@@ -198,16 +190,25 @@
         const upperBead = rodEl.querySelector('.upper-bead');
         const lowerBeads = rodEl.querySelectorAll('.lower-bead');
         
-        // 上珠：未啟動在頂端 (0%)，啟動向下移 100% 貼齊橫梁
-        upperBead.style.transform = data.upper ? 'translateX(-50%) translateY(100%)' : 'translateX(-50%) translateY(0)';
+        // 上珠位置：未啟動靠頂端 (10px)，啟動貼緊橫梁 (82px)
+        upperBead.style.top = data.upper ? '82px' : '10px';
         
-        // 下珠：依據數值 (0~4) 向上滑動對應的格數距離
+        // 下珠位置：固定座標計算，確保 4 顆珠子嚴格依序排列絕不重疊
+        // 下盤總可用空間從 beam 下方 (145px) 到底部 (約 350px)
+        const baseTop = 230; // 歸零時最底部的基準點
+        const beadHeight = 28;
+        const gap = 3;
+        
         lowerBeads.forEach((bead, idx) => {
-          const beadVal = 4 - idx; 
+          // idx: 0(最上方), 1, 2, 3(最下方)
+          const beadVal = 4 - idx; // 對應權重的珠子
+          
           if (beadVal <= data.lower) {
-            bead.style.transform = `translateX(-50%) translateY(-${data.lower * 100}%)`;
+            // 往上推貼齊橫梁
+            bead.style.top = `${150 + idx * (beadHeight + gap)}px`;
           } else {
-            bead.style.transform = 'translateX(-50%) translateY(0)';
+            // 沉在下方
+            bead.style.top = `${baseTop + idx * (beadHeight + gap)}px`;
           }
         });
         
